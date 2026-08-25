@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CSS Geography Duel</title>
+<style>
+:root{
+  --ink:#142033;--muted:#526278;--teal:#0b7a66;--red:#d62828;--gold:#f4a261;
+  --panel:rgba(255,252,247,.94);--line:#d7cfc0;--shadow:0 18px 40px rgba(20,32,51,.14);
+  font-family:"Segoe UI",system-ui,Georgia,serif;color:var(--ink);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;
+  background:
+    radial-gradient(900px 480px at 10% -8%,#ffe8c8 0%,transparent 55%),
+    radial-gradient(800px 460px at 100% 0%,#c8f0e6 0%,transparent 50%),
+    linear-gradient(160deg,#f7f1e6,#e9f5ef 50%,#f4ebe3);
+  transition:filter .25s ease;
+}
+body.flash-ok{filter:saturate(1.3) hue-rotate(-12deg)}
+body.flash-bad{filter:saturate(1.4) hue-rotate(18deg)}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40}
+.app{max-width:920px;margin:0 auto;padding:1.4rem 1.15rem 4.5rem;position:relative;z-index:1}
+.eyebrow{margin:0;text-transform:uppercase;letter-spacing:.14em;font-size:.72rem;color:var(--teal);font-weight:700}
+h1{font-size:clamp(1.85rem,5vw,2.7rem);margin:.3rem 0 .45rem;letter-spacing:-.03em}
+.tagline,.meta,.ai{color:var(--muted);font-size:.93rem}
+.grid2{display:grid;gap:1rem;margin-top:1.35rem}
+@media(min-width:720px){.grid2{grid-template-columns:1fr 1fr}}
+.card{
+  text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:20px;
+  padding:1.25rem 1.3rem;box-shadow:var(--shadow);display:grid;gap:.5rem;width:100%;
+  backdrop-filter:blur(8px);transition:transform .15s ease,border-color .15s ease;
+}
+button.card{cursor:pointer}
+button.card:hover{transform:translateY(-3px);border-color:var(--teal)}
+.card.static{cursor:default}
+.ctitle{font-size:1.28rem;font-weight:800}
+.cdesc{color:var(--muted);font-size:.95rem}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.2rem}
+button{
+  border:1px solid var(--line);background:#fff;border-radius:999px;padding:.55rem 1rem;
+  cursor:pointer;font:inherit;color:inherit;transition:transform .12s ease;
+}
+button:hover:not(:disabled){transform:translateY(-1px)}
+button.primary{background:linear-gradient(135deg,var(--teal),#11998e);border-color:transparent;color:#fff;font-weight:700}
+button.danger{background:linear-gradient(135deg,#d62828,#e4572e);border:none;color:#fff;font-weight:700}
+button.ghost{background:transparent}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.top{display:flex;justify-content:space-between;gap:1rem;margin-bottom:1rem;align-items:flex-start}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1rem 1.1rem;
+  box-shadow:var(--shadow);display:grid;gap:.55rem;margin-bottom:1rem;
+}
+.status{margin:0;font-size:1.15rem;font-weight:800}
+.scores{display:flex;gap:.7rem;flex-wrap:wrap}
+.scores span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:.25rem .7rem;font-weight:700;font-size:.9rem}
+.fb{margin:0;padding:.7rem .85rem;border-radius:12px;font-weight:700;animation:pop .35s ease}
+.fb.ok{background:#d8f3e7;color:#065445;border:1px solid #8fd6b8}
+.fb.bad{background:#ffe0d8;color:#9b1c1c;border:1px solid #f0a090}
+@keyframes pop{from{transform:scale(.92);opacity:.35}to{transform:none;opacity:1}}
+.board{width:min(100%,380px);margin:.55rem auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;aspect-ratio:1}
+.cell{
+  border:2px solid #cfc5b2;background:linear-gradient(180deg,#fffefb,#f4efe4);border-radius:18px;
+  font-size:clamp(2.1rem,8vw,3rem);font-weight:800;cursor:pointer;box-shadow:var(--shadow);
+  transition:transform .12s ease,background .12s ease;
+}
+.cell:hover:not(:disabled){transform:scale(1.04);background:#fff7e8}
+.cell:active:not(:disabled){transform:scale(.96)}
+.cell.x{color:var(--teal);animation:stamp .28s ease}
+.cell.o{color:var(--red);animation:stamp .28s ease}
+.cell.win{border-color:var(--gold);background:#fff4d6;animation:glow .9s ease infinite alternate}
+@keyframes stamp{from{transform:scale(.55);opacity:.2}to{transform:scale(1);opacity:1}}
+@keyframes glow{from{box-shadow:0 0 0 rgba(244,162,97,.25)}to{box-shadow:0 0 24px rgba(244,162,97,.75)}}
+.mask{position:fixed;inset:0;background:rgba(20,32,51,.52);display:grid;place-items:center;padding:1rem;z-index:30}
+.modal{
+  width:min(100%,580px);max-height:min(90vh,740px);overflow:auto;background:#fffdf9;
+  border-radius:20px;border:1px solid var(--line);box-shadow:var(--shadow);padding:1.25rem;display:grid;gap:1rem;
+  animation:rise .28s ease;
+}
+@keyframes rise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip,.turn{font-size:.78rem;border-radius:999px;padding:.32rem .75rem;font-weight:700}
+.chip{background:#d9f3ec;color:#065445}
+.turn{background:#ffe6d4;color:#9a3412}
+.q{margin:0;font-size:1.03rem;font-weight:700;white-space:pre-wrap}
+.opts{display:grid;gap:.5rem}
+.opt{text-align:left;border:2px solid var(--line);background:#fff;border-radius:14px;padding:.8rem .95rem;cursor:pointer;font-weight:600}
+.opt.selected{border-color:var(--teal);background:#e7f8f2;box-shadow:0 0 0 3px rgba(11,122,102,.15)}
+.celebrate{position:fixed;inset:0;display:grid;place-items:center;z-index:50;background:rgba(20,32,51,.35)}
+.party{
+  background:linear-gradient(160deg,#fff,#fff7e8);border:2px solid #f4a261;border-radius:24px;
+  padding:1.6rem 1.35rem;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.28);
+  width:min(92vw,420px);animation:bounceIn .55s cubic-bezier(.2,1.4,.4,1);
+}
+.party.lose{border-color:#e4572e;background:linear-gradient(160deg,#fff,#ffe8e2)}
+.party.draw{border-color:#6c757d;background:linear-gradient(160deg,#fff,#eef1f4)}
+.party h2{margin:.15rem 0 .4rem;font-size:2rem}
+.party p{margin:0 0 1rem;color:var(--muted)}
+.emoji{font-size:3rem;animation:wiggle 1s ease infinite}
+.actions{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1rem 1.1rem;
+  box-shadow:var(--shadow);display:grid;gap:.55rem;margin-bottom:1rem;
+}
+.status{margin:0;font-size:1.15rem;font-weight:800}
+.meta,.ai{color:var(--muted);font-size:.9rem;margin:0}
+.board{width:min(100%,380px);margin:.55rem auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;aspect-ratio:1}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.25rem}
+@keyframes bounceIn{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes wiggle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+#muteBtn{
+  position:fixed;right:14px;bottom:14px;z-index:60;background:#142033;color:#fff;border:none;
+  border-radius:999px;padding:.65rem 1rem;font-weight:700;box-shadow:var(--shadow);
+}
+
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="app" id="app"></div>
+<button id="muteBtn" type="button">🔊 Sound On</button>
+<script>
+const BANK = [{"id":"mpt4-q150","source":"MPT_4_corrected.docx","sourceQuestionNumber":150,"category":"Pakistan Affairs","question":"Consider the following statements regarding Pakistan’s constitutional framework:\n(1) The Constitution distributes legislative and executive authority between the federation and the provinces.\n(2) The Council of Common Interests provides a constitutional mechanism for federal–provincial coordination.\n(3) Provincial autonomy is inconsistent with the concept of a federation.\n(4) The constitutional division of powers is intended to regulate relations between different levels of government.\nWhich combination is correct?","options":{"A":"1, 2 and 4 only","B":"1 and 3 only","C":"2, 3 and 4 only","D":"1, 2, 3 and 4"},"answer":"A","answerIndex":0},{"id":"mpt4-q151","source":"MPT_4_corrected.docx","sourceQuestionNumber":151,"category":"Pakistan Affairs","question":"Which principle requires all organs and institutions of the state to exercise their authority within the limits prescribed by the Constitution?","options":{"A":"Parliamentary privilege","B":"Constitutional supremacy","C":"Administrative discretion","D":"Political sovereignty"},"answer":"B","answerIndex":1},{"id":"mpt4-q152","source":"MPT_4_corrected.docx","sourceQuestionNumber":152,"category":"Pakistan Affairs","question":"Consider the following statements regarding the federal structure of Pakistan:\n(1) Legislative powers are distributed between the federation and the provinces.\n(2) The Council of Common Interests provides an institutional mechanism for addressing matters involving the federation and provinces.\n(3) Provincial governments possess no constitutionally recognized legislative competence.\n(4) Federalism involves both constitutional division of authority and intergovernmental coordination.\nWhich statements are correct?","options":{"A":"1, 2 and 4 only","B":"1 and 3 only","C":"2, 3 and 4 only","D":"1, 2, 3 and 4"},"answer":"A","answerIndex":0},{"id":"mpt4-q153","source":"MPT_4_corrected.docx","sourceQuestionNumber":153,"category":"Pakistan Affairs","question":"The National Finance Commission Award primarily concerns:","options":{"A":"Distribution of financial resources between the federation and provinces","B":"Appointment of judges to the superior courts","C":"Allocation of seats in the National Assembly","D":"Regulation of Pakistan's foreign trade"},"answer":"A","answerIndex":0},{"id":"mpt4-q154","source":"MPT_4_corrected.docx","sourceQuestionNumber":154,"category":"Pakistan Affairs","question":"Which institution is constitutionally associated with resolving certain disputes and coordinating policy between the federal government and provinces?","options":{"A":"Council of Common Interests","B":"Election Commission of Pakistan","C":"Federal Public Service Commission","D":"National Accountability Bureau"},"answer":"A","answerIndex":0},{"id":"mpt4-q155","source":"MPT_4_corrected.docx","sourceQuestionNumber":155,"category":"Pakistan Affairs","question":"Consider the following statements regarding Pakistan's parliamentary system:\n(1) The Prime Minister is the head of government.\n(2) The President is the constitutional head of state.\n(3) The Federal Cabinet, together with the Ministers of State, is collectively responsible to the Senate and the National Assembly.\n(4) The President independently exercises all executive authority without constitutional limitations.\nWhich combination is correct?","options":{"A":"1, 2 and 3 only","B":"1 and 4 only","C":"2, 3 and 4 only","D":"1, 2, 3 and 4"},"answer":"A","answerIndex":0},{"id":"mpt4-q156","source":"MPT_4_corrected.docx","sourceQuestionNumber":156,"category":"Pakistan Affairs","question":"Which constitutional institution is primarily responsible for conducting and supervising elections in Pakistan?","options":{"A":"Election Commission of Pakistan","B":"Senate of Pakistan","C":"Council of Common Interests","D":"National Finance Commission"},"answer":"A","answerIndex":0},{"id":"mpt4-q157","source":"MPT_4_corrected.docx","sourceQuestionNumber":157,"category":"Pakistan Affairs","question":"The 18th Constitutional Amendment is particularly significant because it:","options":{"A":"Abolished the Senate","B":"Strengthened provincial autonomy and substantially altered the federal balance of powers","C":"Established Pakistan as a presidential system","D":"Removed the constitutional role of Parliament"},"answer":"B","answerIndex":1},{"id":"mpt4-q158","source":"MPT_4_corrected.docx","sourceQuestionNumber":158,"category":"Pakistan Affairs","question":"Which constitutional amendment is most directly associated with the abolition of the Concurrent Legislative List and the consequent strengthening of provincial legislative autonomy in Pakistan?","options":{"A":"Eighth Amendment","B":"Thirteenth Amendment","C":"Seventeenth Amendment","D":"Eighteenth Amendment"},"answer":"D","answerIndex":3},{"id":"mpt4-q159","source":"MPT_4_corrected.docx","sourceQuestionNumber":159,"category":"Pakistan Affairs","question":"Pakistan's current account balance primarily records:","options":{"A":"Government tax revenue and expenditure only","B":"Transactions involving goods, services, primary income and secondary income between residents and non-residents","C":"Only foreign direct investment inflows","D":"Only changes in official foreign-exchange reserves"},"answer":"B","answerIndex":1},{"id":"mpt4-q160","source":"MPT_4_corrected.docx","sourceQuestionNumber":160,"category":"Pakistan Affairs","question":"A persistent current account deficit generally implies that:","options":{"A":"A country is earning more from its external transactions than it is spending","B":"External receipts from relevant current transactions are insufficient to cover corresponding external payments","C":"Foreign-exchange reserves must automatically increase","D":"Imports must necessarily be zero"},"answer":"B","answerIndex":1},{"id":"mpt4-q161","source":"MPT_4_corrected.docx","sourceQuestionNumber":161,"category":"Pakistan Affairs","question":"Which of the following is classified as a capital-intensive rather than labour-intensive factor of production?","options":{"A":"Machinery","B":"Human labour","C":"Manual skill","D":"Working hours"},"answer":"A","answerIndex":0},{"id":"mpt4-q162","source":"MPT_4_corrected.docx","sourceQuestionNumber":162,"category":"Pakistan Affairs","question":"Inflation refers most accurately to:","options":{"A":"A sustained increase in the general price level of goods and services","B":"A decline in the money supply only","C":"A fall in all individual prices simultaneously","D":"An increase in exports regardless of prices"},"answer":"A","answerIndex":0},{"id":"mpt4-q163","source":"MPT_4_corrected.docx","sourceQuestionNumber":163,"category":"Pakistan Affairs","question":"If inflation rises while nominal wages remain unchanged, the purchasing power of those wages generally:","options":{"A":"Increases","B":"Decreases","C":"Remains exactly unchanged","D":"Becomes unrelated to prices"},"answer":"B","answerIndex":1},{"id":"mpt4-q164","source":"MPT_4_corrected.docx","sourceQuestionNumber":164,"category":"Pakistan Affairs","question":"Which monetary-policy instrument is generally used by a central bank to influence liquidity and interest rates in the financial system?","options":{"A":"Open market operations","B":"Agricultural subsidies","C":"Customs valuation","D":"Corporate taxation"},"answer":"A","answerIndex":0},{"id":"mpt4-q165","source":"MPT_4_corrected.docx","sourceQuestionNumber":165,"category":"Pakistan Affairs","question":"If a central bank raises its policy interest rate to reduce inflationary pressure, the immediate intended effect is generally to:","options":{"A":"Encourage borrowing and aggregate demand","B":"Reduce the cost of credit and increase consumption","C":"Tighten monetary conditions and moderate aggregate demand","D":"Increase the money supply automatically"},"answer":"C","answerIndex":2},{"id":"mpt4-q166","source":"MPT_4_corrected.docx","sourceQuestionNumber":166,"category":"Pakistan Affairs","question":"Which of the following best describes fiscal policy?","options":{"A":"Government decisions concerning taxation, expenditure and borrowing","B":"Central-bank decisions concerning interest rates alone","C":"Private-sector decisions concerning wages","D":"Exchange-rate movements determined exclusively by market forces"},"answer":"A","answerIndex":0},{"id":"mpt4-q167","source":"MPT_4_corrected.docx","sourceQuestionNumber":167,"category":"Pakistan Affairs","question":"A fiscal deficit occurs when:","options":{"A":"Government revenue exceeds government expenditure","B":"Government expenditure exceeds government revenue over the relevant accounting period","C":"Exports exceed imports","D":"Foreign reserves exceed external liabilities"},"answer":"B","answerIndex":1},{"id":"mpt4-q168","source":"MPT_4_corrected.docx","sourceQuestionNumber":168,"category":"Pakistan Affairs","question":"Which statement correctly distinguishes public debt from fiscal deficit?","options":{"A":"They are identical concepts expressed in different currencies","B":"A fiscal deficit is a flow over a period, whereas public debt represents accumulated outstanding obligations","C":"Public debt occurs only when the government records a budget surplus","D":"A fiscal deficit exists only when external debt rises"},"answer":"B","answerIndex":1},{"id":"mpt4-q169","source":"MPT_4_corrected.docx","sourceQuestionNumber":169,"category":"Pakistan Affairs","question":"Which factor is most likely to increase the demand for a country's currency in foreign-exchange markets, all else being equal?","options":{"A":"Increased demand for that country's exports","B":"A complete cessation of foreign investment","C":"A permanent fall in foreign demand for domestic goods","D":"A reduction in all external receipts"},"answer":"A","answerIndex":0},{"id":"mpt4-q170","source":"MPT_4_corrected.docx","sourceQuestionNumber":170,"category":"Pakistan Affairs","question":"Currency depreciation generally makes a country's exports, measured in foreign currency, relatively:","options":{"A":"More expensive","B":"Less competitive in every circumstance","C":"Less expensive, other factors remaining constant","D":"Completely unaffected"},"answer":"C","answerIndex":2},{"id":"mpt4-q171","source":"MPT_4_corrected.docx","sourceQuestionNumber":171,"category":"Pakistan Affairs","question":"Remittances sent by overseas workers to their home country are generally recorded in the country's:","options":{"A":"Current account","B":"Capital account only","C":"Financial account only","D":"Trade balance exclusively"},"answer":"A","answerIndex":0},{"id":"mpt4-q172","source":"MPT_4_corrected.docx","sourceQuestionNumber":172,"category":"Pakistan Affairs","question":"Foreign Direct Investment (FDI) differs from portfolio investment primarily because FDI generally involves:","options":{"A":"A longer-term interest and a significant degree of influence or control over an enterprise","B":"Only short-term purchases of government securities","C":"No cross-border movement of capital","D":"Exclusively charitable transfers"},"answer":"A","answerIndex":0},{"id":"mpt4-q173","source":"MPT_4_corrected.docx","sourceQuestionNumber":173,"category":"Pakistan Affairs","question":"Which institution is primarily responsible for monetary policy in Pakistan?","options":{"A":"Ministry of Finance","B":"State Bank of Pakistan","C":"Federal Board of Revenue","D":"Planning Commission"},"answer":"B","answerIndex":1},{"id":"mpt4-q174","source":"MPT_4_corrected.docx","sourceQuestionNumber":174,"category":"Pakistan Affairs","question":"Which institution is primarily responsible for federal tax administration in Pakistan?","options":{"A":"State Bank of Pakistan","B":"Federal Board of Revenue","C":"Securities and Exchange Commission of Pakistan","D":"National Electric Power Regulatory Authority"},"answer":"B","answerIndex":1},{"id":"mpt4-q175","source":"MPT_4_corrected.docx","sourceQuestionNumber":175,"category":"Pakistan Affairs","question":"Consider the following statements regarding the balance of trade:\n(1) It refers specifically to the difference between exports and imports of goods.\n(2) A trade surplus occurs when exports of goods exceed imports of goods.\n(3) A trade deficit necessarily means that the country's entire current account is in deficit.\n(4) Trade in services is not itself part of the merchandise trade balance.\nWhich statements are correct?","options":{"A":"1, 2 and 4 only","B":"1 and 3 only","C":"2, 3 and 4 only","D":"1, 2, 3 and 4"},"answer":"A","answerIndex":0},{"id":"mpt4-q176","source":"MPT_4_corrected.docx","sourceQuestionNumber":176,"category":"Pakistan Affairs","question":"Which international institution is principally associated with providing short- and medium-term financial assistance to countries facing balance-of-payments difficulties?","options":{"A":"International Monetary Fund","B":"World Trade Organization","C":"United Nations Educational, Scientific and Cultural Organization","D":"International Labour Organization"},"answer":"A","answerIndex":0},{"id":"mpt4-q177","source":"MPT_4_corrected.docx","sourceQuestionNumber":177,"category":"Pakistan Affairs","question":"The World Bank Group is primarily associated with:","options":{"A":"Development financing, poverty reduction and long-term economic development","B":"Setting global monetary policy","C":"Conducting national elections","D":"Managing international military alliances"},"answer":"A","answerIndex":0},{"id":"mpt4-q178","source":"MPT_4_corrected.docx","sourceQuestionNumber":178,"category":"Pakistan Affairs","question":"The World Trade Organization primarily provides an institutional framework for:","options":{"A":"International trade rules and negotiations","B":"Global military intervention","C":"International criminal prosecution","D":"Monetary-policy coordination"},"answer":"A","answerIndex":0},{"id":"mpt4-q179","source":"MPT_4_corrected.docx","sourceQuestionNumber":179,"category":"Pakistan Affairs","question":"Which of the following best describes comparative advantage in international trade?","options":{"A":"The ability to produce every good more cheaply than every other country","B":"The ability to produce a good at a lower opportunity cost relative to another producer","C":"The possession of the largest labour force","D":"The ability to maintain permanent trade surpluses"},"answer":"B","answerIndex":1},{"id":"mpt4-q180","source":"MPT_4_corrected.docx","sourceQuestionNumber":180,"category":"Pakistan Affairs","question":"If a country imposes a tariff on imported steel, the most direct immediate effect is likely to be:","options":{"A":"Lowering the domestic price of imported steel","B":"Increasing the domestic price of imported steel relative to the no-tariff situation","C":"Eliminating all domestic steel production","D":"Automatically increasing exports of steel"},"answer":"B","answerIndex":1},{"id":"mpt4-q181","source":"MPT_4_corrected.docx","sourceQuestionNumber":181,"category":"Pakistan Affairs","question":"Which of the following best describes human capital?","options":{"A":"Physical machinery owned by firms","B":"Knowledge, skills, education and capabilities embodied in individuals that contribute to productivity","C":"Foreign currency reserves held by a central bank","D":"Natural resources found within national territory"},"answer":"B","answerIndex":1},{"id":"mpt4-q182","source":"MPT_4_corrected.docx","sourceQuestionNumber":182,"category":"Pakistan Affairs","question":"Economic growth is most commonly measured by changes in:","options":{"A":"Real Gross Domestic Product over time","B":"Nominal exchange rates alone","C":"Government employment alone","D":"The trade deficit alone"},"answer":"A","answerIndex":0},{"id":"mpt4-q183","source":"MPT_4_corrected.docx","sourceQuestionNumber":183,"category":"Pakistan Affairs","question":"Real GDP differs from nominal GDP because real GDP:","options":{"A":"Excludes all government expenditure","B":"Adjusts for changes in the price level","C":"Measures only exports","D":"Includes only agricultural production"},"answer":"B","answerIndex":1},{"id":"mpt4-q184","source":"MPT_4_corrected.docx","sourceQuestionNumber":184,"category":"Pakistan Affairs","question":"Which situation is most likely to represent stagflation?","options":{"A":"High economic growth with low inflation","B":"Falling prices with rapid economic expansion","C":"High inflation combined with weak economic growth and elevated unemployment","D":"Stable prices combined with full employment"},"answer":"C","answerIndex":2},{"id":"mpt4-q185","source":"MPT_4_corrected.docx","sourceQuestionNumber":185,"category":"Pakistan Affairs","question":"The term “debt servicing” refers primarily to:","options":{"A":"The process of creating new debt","B":"Payments required to meet interest and principal obligations on existing debt","C":"Government collection of customs duties","D":"Private-sector investment in infrastructure"},"answer":"B","answerIndex":1},{"id":"mpt4-q186","source":"MPT_4_corrected.docx","sourceQuestionNumber":186,"category":"Pakistan Affairs","question":"Which factor can contribute to a country's foreign-exchange reserves increasing?","options":{"A":"Sustained net foreign-exchange inflows","B":"Persistent capital outflows with no offsetting inflows","C":"A permanent increase in import payments without financing","D":"A continuous fall in export receipts"},"answer":"A","answerIndex":0},{"id":"mpt4-q187","source":"MPT_4_corrected.docx","sourceQuestionNumber":187,"category":"Pakistan Affairs","question":"Which statement best explains why energy shortages can constrain economic growth?","options":{"A":"Energy availability has no relationship with industrial production","B":"Unreliable or insufficient energy supply can raise production costs, reduce output and discourage investment","C":"Energy shortages automatically increase productivity","D":"Energy shortages affect only households and never firms"},"answer":"B","answerIndex":1},{"id":"mpt4-q188","source":"MPT_4_corrected.docx","sourceQuestionNumber":188,"category":"Pakistan Affairs","question":"Which policy would most directly address a structural productivity problem in an economy?","options":{"A":"Improving infrastructure, human capital, technology adoption and institutional efficiency","B":"Permanently reducing investment in education","C":"Restricting technological innovation","D":"Eliminating all competition among firms"},"answer":"A","answerIndex":0},{"id":"mpt4-q189","source":"MPT_4_corrected.docx","sourceQuestionNumber":189,"category":"Pakistan Affairs","question":"Which of the following is an example of a supply-side reform?","options":{"A":"Improving labour productivity through skills development and reducing unnecessary regulatory barriers","B":"Increasing government consumption temporarily without addressing productive capacity","C":"Increasing import demand through consumer subsidies alone","D":"Expanding the money supply without changes to productive capacity"},"answer":"A","answerIndex":0},{"id":"mpt4-q190","source":"MPT_4_corrected.docx","sourceQuestionNumber":190,"category":"Pakistan Affairs","question":"Consider the following statements about sustainable development:\n(1) It seeks to balance economic development, social well-being and environmental considerations.\n(2) It requires consideration of the needs of future generations.\n(3) Environmental protection and economic development are necessarily mutually exclusive.\n(4) Sustainable development may involve more efficient use of natural resources.\nWhich combination is correct?","options":{"A":"1, 2 and 4 only","B":"1 and 3 only","C":"2, 3 and 4 only","D":"1, 2, 3 and 4"},"answer":"A","answerIndex":0},{"id":"mpt4-q191","source":"MPT_4_corrected.docx","sourceQuestionNumber":191,"category":"Current Affairs","question":"Which United Nations framework provides a set of 17 global goals aimed at addressing poverty, inequality, health, education, climate and other dimensions of sustainable development?","options":{"A":"Sustainable Development Goals","B":"Millennium Security Framework","C":"Global Economic Stabilization Goals","D":"Humanitarian Development Charter"},"answer":"A","answerIndex":0},{"id":"mpt4-q192","source":"MPT_4_corrected.docx","sourceQuestionNumber":192,"category":"Current Affairs","question":"Sustainable Development Goal 13 is primarily concerned with:","options":{"A":"Climate action","B":"Quality education","C":"Gender equality","D":"Life below water"},"answer":"A","answerIndex":0},{"id":"mpt4-q193","source":"MPT_4_corrected.docx","sourceQuestionNumber":193,"category":"Current Affairs","question":"Which phenomenon is most directly associated with increasing atmospheric concentrations of carbon dioxide and the absorption of carbon dioxide by seawater?","options":{"A":"Ocean acidification","B":"Ozone formation in the stratosphere only","C":"Reduced atmospheric pressure everywhere","D":"Elimination of all marine biodiversity"},"answer":"A","answerIndex":0},{"id":"mpt4-q194","source":"MPT_4_corrected.docx","sourceQuestionNumber":194,"category":"Current Affairs","question":"Which international agreement provides the principal global framework for strengthening climate action and limiting the increase in global average temperature?","options":{"A":"Paris Agreement","B":"Geneva Convention on Refugees","C":"Rome Statute","D":"Chicago Convention"},"answer":"A","answerIndex":0},{"id":"mpt4-q195","source":"MPT_4_corrected.docx","sourceQuestionNumber":195,"category":"Current Affairs","question":"The principle of collective security is most closely associated with the idea that:","options":{"A":"States should respond collectively to threats to international peace and security","B":"Every state should rely exclusively on unilateral military action","C":"International organizations should have no role in conflict prevention","D":"Security is exclusively a domestic matter"},"answer":"A","answerIndex":0},{"id":"mpt4-q196","source":"MPT_4_corrected.docx","sourceQuestionNumber":196,"category":"Current Affairs","question":"Which organ of the United Nations has primary responsibility for the maintenance of international peace and security?","options":{"A":"General Assembly","B":"Security Council","C":"Economic and Social Council","D":"Secretariat"},"answer":"B","answerIndex":1},{"id":"mpt4-q197","source":"MPT_4_corrected.docx","sourceQuestionNumber":197,"category":"Current Affairs","question":"A permanent member of the United Nations Security Council can prevent the adoption of a substantive resolution by exercising its:","options":{"A":"General Assembly vote","B":"Veto power","C":"Secretary-General authority","D":"Judicial review"},"answer":"B","answerIndex":1},{"id":"mpt4-q198","source":"MPT_4_corrected.docx","sourceQuestionNumber":198,"category":"Current Affairs","question":"Which principle of international law generally prohibits states from using force against the territorial integrity or political independence of another state, subject to recognized exceptions?","options":{"A":"Prohibition on the use of force","B":"Principle of diplomatic immunity","C":"Principle of diplomatic asylum","D":"Principle of economic non-intervention"},"answer":"A","answerIndex":0},{"id":"mpt4-q199","source":"MPT_4_corrected.docx","sourceQuestionNumber":199,"category":"Current Affairs","question":"Which of the following best describes soft power in international relations?","options":{"A":"The ability to influence others primarily through attraction, legitimacy and persuasion rather than coercion or payment","B":"The ability to impose policy exclusively through military force","C":"The use of economic sanctions in every circumstance","D":"The possession of nuclear weapons alone"},"answer":"A","answerIndex":0},{"id":"mpt4-q200","source":"MPT_4_corrected.docx","sourceQuestionNumber":200,"category":"Current Affairs","question":"Consider the following statements regarding contemporary international relations:\n(1) Economic interdependence can create both opportunities for cooperation and vulnerabilities.\n(2) Non-state actors can influence international political outcomes.\n(3) Technological change has no significant implications for national security.\n(4) Information, cyber capabilities and digital networks have become increasingly relevant to state power.\nWhich combination is correct?","options":{"A":"1, 2 and 4 only","B":"1 and 3 only","C":"2, 3 and 4 only","D":"1, 2, 3 and 4"},"answer":"A","answerIndex":0}];
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+let actx = null;
+let muted = false;
+
+function audio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+
+function beep(freq, dur, type, vol, at) {
+  if (muted) return;
+  const c = audio();
+  const t = at || c.currentTime;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol || 0.1, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g);
+  g.connect(c.destination);
+  o.start(t);
+  o.stop(t + dur + 0.03);
+}
+
+const SFX = {
+  click() {
+    const t = audio().currentTime;
+    beep(520, 0.05, 'triangle', 0.05, t);
+    beep(780, 0.04, 'triangle', 0.03, t + 0.03);
+  },
+  select() { beep(640, 0.06, 'sine', 0.06); },
+  correct() {
+    const t = audio().currentTime;
+    beep(523, 0.1, 'sine', 0.1, t);
+    beep(659, 0.12, 'sine', 0.1, t + 0.09);
+    beep(784, 0.18, 'sine', 0.11, t + 0.18);
+  },
+  wrong() {
+    const t = audio().currentTime;
+    beep(210, 0.16, 'sawtooth', 0.07, t);
+    beep(165, 0.22, 'sawtooth', 0.055, t + 0.1);
+  },
+  place() {
+    const t = audio().currentTime;
+    beep(400, 0.07, 'square', 0.04, t);
+    beep(560, 0.08, 'square', 0.03, t + 0.05);
+  },
+  win() {
+    const t = audio().currentTime;
+    [523, 659, 784, 1046, 1318].forEach((f, i) => beep(f, 0.2, 'sine', 0.1, t + i * 0.11));
+  },
+  lose() {
+    const t = audio().currentTime;
+    beep(392, 0.2, 'triangle', 0.08, t);
+    beep(311, 0.25, 'triangle', 0.07, t + 0.18);
+    beep(220, 0.35, 'sawtooth', 0.05, t + 0.4);
+  },
+  draw() {
+    const t = audio().currentTime;
+    beep(440, 0.15, 'sine', 0.07, t);
+    beep(440, 0.2, 'sine', 0.05, t + 0.2);
+  },
+};
+
+const cv = document.getElementById('fx');
+const g2 = cv.getContext('2d');
+let bits = [];
+function sizeFx() {
+  cv.width = innerWidth;
+  cv.height = innerHeight;
+}
+addEventListener('resize', sizeFx);
+sizeFx();
+function burst(n) {
+  for (let i = 0; i < n; i++) {
+    bits.push({
+      x: Math.random() * cv.width,
+      y: -30 - Math.random() * cv.height * 0.25,
+      w: 6 + Math.random() * 8,
+      h: 8 + Math.random() * 10,
+      vx: -3 + Math.random() * 6,
+      vy: 3 + Math.random() * 5,
+      r: Math.random() * Math.PI,
+      vr: -0.25 + Math.random() * 0.5,
+      c: ['#0b7a66', '#e4572e', '#f4a261', '#2a9d8f', '#e9c46a', '#264653', '#ff6b6b'][i % 7],
+    });
+  }
+}
+(function loop() {
+  g2.clearRect(0, 0, cv.width, cv.height);
+  bits.forEach((p) => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08;
+    p.r += p.vr;
+    g2.save();
+    g2.translate(p.x, p.y);
+    g2.rotate(p.r);
+    g2.fillStyle = p.c;
+    g2.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    g2.restore();
+  });
+  bits = bits.filter((p) => p.y < cv.height + 50);
+  requestAnimationFrame(loop);
+})();
+
+function shuffle(a) {
+  const x = a.slice();
+  for (let i = x.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    const t = x[i];
+    x[i] = x[j];
+    x[j] = t;
+  }
+  return x;
+}
+function blank() { return Array(9).fill(null); }
+function empty(b) {
+  const e = [];
+  for (let i = 0; i < 9; i++) if (!b[i]) e.push(i);
+  return e;
+}
+function winner(b) {
+  for (const [a, c, d] of LINES) {
+    const v = b[a];
+    if (v && v === b[c] && v === b[d]) return v;
+  }
+  return null;
+}
+function lineOf(b) {
+  for (const L of LINES) {
+    const [a, c, d] = L;
+    const v = b[a];
+    if (v && v === b[c] && v === b[d]) return L;
+  }
+  return null;
+}
+function outcome(b) {
+  const w = winner(b);
+  if (w) return w;
+  if (!empty(b).length) return 'draw';
+  return null;
+}
+function put(b, i, p) {
+  if (b[i]) return b;
+  const n = b.slice();
+  n[i] = p;
+  return n;
+}
+function opp(p) { return p === 'X' ? 'O' : 'X'; }
+
+function scoreTerm(b, ai, d) {
+  const w = winner(b);
+  if (w === ai) return 10 - d;
+  if (w && w !== ai) return d - 10;
+  if (!empty(b).length) return 0;
+  return null;
+}
+function mm(b, ai, cur, d) {
+  const t = scoreTerm(b, ai, d);
+  if (t !== null) return t;
+  const e = empty(b);
+  if (cur === ai) {
+    let best = -1e9;
+    for (const i of e) {
+      const n = b.slice();
+      n[i] = cur;
+      best = Math.max(best, mm(n, ai, opp(cur), d + 1));
+    }
+    return best;
+  }
+  let best = 1e9;
+  for (const i of e) {
+    const n = b.slice();
+    n[i] = cur;
+    best = Math.min(best, mm(n, ai, opp(cur), d + 1));
+  }
+  return best;
+}
+function bestMove(b, ai) {
+  const e = empty(b);
+  if (!e.length) return -1;
+  let bestS = -1e9;
+  let m = e[0];
+  for (const i of e) {
+    const n = b.slice();
+    n[i] = ai;
+    const s = mm(n, ai, opp(ai), 0);
+    if (s > bestS) {
+      bestS = s;
+      m = i;
+    }
+  }
+  return m;
+}
+function rnd(b) {
+  const e = empty(b);
+  return e.length ? e[(Math.random() * e.length) | 0] : -1;
+}
+function aiMove(b, ai, diff) {
+  const o = bestMove(b, ai);
+  if (diff === 'hard') return o;
+  const r = Math.random();
+  return (diff === 'easy' ? r < 0.3 : r < 0.75) ? o : rnd(b);
+}
+
+const S = {
+  phase: 'menu',
+  mode: 'pvp',
+  diff: 'hard',
+  board: blank(),
+  turn: 'X',
+  result: null,
+  winCells: [],
+  queue: shuffle(BANK),
+  bank: BANK.slice(),
+  used: new Set(),
+  pending: null,
+  pick: null,
+  fb: null,
+  fbType: null,
+  aiLog: null,
+  aiBusy: false,
+  scores: { x: 0, o: 0, d: 0 },
+  party: null,
+  timer: null,
+};
+
+function drawQ() {
+  for (let i = 0; i < BANK.length + 2; i++) {
+    if (!S.queue.length) S.queue = shuffle(S.bank);
+    const q = S.queue.shift();
+    if (!S.used.has(q.id)) {
+      S.used.add(q.id);
+      return q;
+    }
+    S.queue.push(q);
+  }
+  if (!S.queue.length) S.queue = shuffle(S.bank);
+  const q = S.queue.shift();
+  S.used.add(q.id);
+  return q;
+}
+
+function partyFor(r) {
+  if (r === 'draw') {
+    SFX.draw();
+    S.party = { kind: 'draw', emoji: '🤝', title: "It's a draw!", text: 'Tight match — rematch for glory?' };
+    return;
+  }
+  if (S.mode === 'pvc' && r === 'O') {
+    SFX.lose();
+    S.party = { kind: 'lose', emoji: '😤', title: 'Computer wins', text: 'Strong AI. Try Easy/Medium or rematch!' };
+    return;
+  }
+  SFX.win();
+  burst(150);
+  S.party = {
+    kind: 'win',
+    emoji: '🏆',
+    title: S.mode === 'pvc' ? 'You win!' : 'Player ' + r + ' wins!',
+    text: 'Celebration unlocked — CSS energy!',
+  };
+}
+
+function finish(board) {
+  const r = outcome(board);
+  if (!r) return false;
+  S.result = r;
+  S.winCells = r === 'draw' ? [] : lineOf(board) || [];
+  if (r === 'X') S.scores.x++;
+  else if (r === 'O') S.scores.o++;
+  else S.scores.d++;
+  partyFor(r);
+  return true;
+}
+
+function start(mode, diff) {
+  clearTimeout(S.timer);
+  bits = [];
+  S.phase = 'play';
+  S.mode = mode;
+  S.diff = diff;
+  S.board = blank();
+  S.turn = 'X';
+  S.result = null;
+  S.winCells = [];
+  S.pending = null;
+  S.pick = null;
+  S.fb = null;
+  S.fbType = null;
+  S.aiLog = null;
+  S.aiBusy = false;
+  S.party = null;
+  S.used = new Set();
+  if (!S.queue.length) S.queue = shuffle(S.bank);
+  SFX.click();
+  paint();
+  maybeAI();
+}
+
+function status() {
+  if (S.result === 'draw') return 'Draw — board full.';
+  if (S.result === 'X') return S.mode === 'pvc' ? 'Victory!' : 'Player X wins!';
+  if (S.result === 'O') return S.mode === 'pvc' ? 'Computer takes it.' : 'Player O wins!';
+  if (S.mode === 'pvc') return S.turn === 'X' ? 'Your turn — pick a square' : 'Computer thinking…';
+  return 'Player ' + S.turn + ' — pick a square';
+}
+
+function tapCell(i) {
+  if (S.phase !== 'play' || S.result || S.pending || S.aiBusy || S.party) return;
+  if (S.board[i] || (S.mode === 'pvc' && S.turn !== 'X')) return;
+  SFX.click();
+  S.pending = { i: i, q: drawQ() };
+  S.pick = null;
+  S.fb = null;
+  S.fbType = null;
+  S.aiLog = null;
+  paint();
+}
+
+function lockAnswer() {
+  if (!S.pending || !S.pick) return;
+  const { i, q } = S.pending;
+  S.pending = null;
+  if (S.pick === q.answer) {
+    SFX.correct();
+    setTimeout(() => SFX.place(), 160);
+    S.board = put(S.board, i, S.turn);
+    S.fb = '✓ Correct! ' + S.turn + ' claims the square.';
+    S.fbType = 'ok';
+    document.body.classList.add('flash-ok');
+    setTimeout(() => document.body.classList.remove('flash-ok'), 420);
+    if (!finish(S.board)) S.turn = opp(S.turn);
+  } else {
+    SFX.wrong();
+    S.fb = '✗ Wrong. Answer was ' + q.answer + '. Turn skipped.';
+    S.fbType = 'bad';
+    document.body.classList.add('flash-bad');
+    setTimeout(() => document.body.classList.remove('flash-bad'), 420);
+    S.turn = opp(S.turn);
+  }
+  S.pick = null;
+  paint();
+  maybeAI();
+}
+
+function maybeAI() {
+  if (S.phase !== 'play' || S.mode !== 'pvc' || S.result || S.pending || S.party) return;
+  if (S.turn !== 'O' || S.aiBusy) return;
+  S.aiBusy = true;
+  S.aiLog = 'Computer answering…';
+  paint();
+  S.timer = setTimeout(() => {
+    const q = drawQ();
+    const m = aiMove(S.board, 'O', S.diff);
+    if (m >= 0) {
+      SFX.place();
+      S.board = put(S.board, m, 'O');
+      S.aiLog = 'Computer cleared an MCQ (' + q.category + ') and placed O.';
+      if (!finish(S.board)) S.turn = 'X';
+    }
+    S.aiBusy = false;
+    paint();
+  }, 750);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function menuHTML() {
+  return (
+    '<section>' +
+    '<p class="eyebrow">CSS Ed-Tech · Live Duel</p>' +
+    '<h1>CSS Geography Duel</h1>' +
+    '<p class="tagline">Earn every square with Pakistan Affairs &amp; Current Affairs MCQs. Sounds + celebration included.</p>' +
+    '<div class="grid2">' +
+    '<button class="card" data-go="pvp|hard"><span class="ctitle">Two Players</span><span class="cdesc">Pass-and-play. Answer MCQs to place marks. First to three wins.</span></button>' +
+    '<div class="card static"><span class="ctitle">You vs Computer</span><span class="cdesc">You are X. Intelligent mode plays perfect Tic Tac Toe.</span>' +
+    '<div class="row">' +
+    '<button type="button" data-go="pvc|easy">Easy</button>' +
+    '<button type="button" data-go="pvc|medium">Medium</button>' +
+    '<button type="button" class="primary" data-go="pvc|hard">Intelligent</button>' +
+    '</div></div></div></section>'
+  );
+}
+
+function gameHTML() {
+  const lock = !!(S.result || S.pending || S.aiBusy || S.party || (S.mode === 'pvc' && S.turn === 'O'));
+  const cells = S.board
+    .map((c, i) => {
+      const w = S.winCells.includes(i) ? ' win' : '';
+      return (
+        '<button class="cell ' +
+        (c === 'X' ? 'x' : c === 'O' ? 'o' : '') +
+        w +
+        '" data-cell="' +
+        i +
+        '" ' +
+        (lock || c ? 'disabled' : '') +
+        '>' +
+        (c || '') +
+        '</button>'
+      );
+    })
+    .join('');
+  const who = S.mode === 'pvc' ? 'You (X)' : 'Player ' + S.turn;
+  let modal = '';
+  if (S.pending) {
+    const q = S.pending.q;
+    const opts = ['A', 'B', 'C', 'D']
+      .map(
+        (k) =>
+          '<button class="opt ' +
+          (S.pick === k ? 'selected' : '') +
+          '" data-opt="' +
+          k +
+          '"><strong>' +
+          k +
+          '.</strong> ' +
+          esc(q.options[k]) +
+          '</button>',
+      )
+      .join('');
+    modal =
+      '<div class="mask"><div class="modal">' +
+      '<div class="chips"><span class="chip">' +
+      esc(q.category) +
+      '</span><span class="turn">' +
+      esc(who) +
+      ' · earn this square</span></div>' +
+      '<p class="q">' +
+      esc(q.question) +
+      '</p><div class="opts">' +
+      opts +
+      '</div>' +
+      '<button class="primary" id="ok" ' +
+      (S.pick ? '' : 'disabled') +
+      '>Lock answer</button></div></div>';
+  }
+  let party = '';
+  if (S.party) {
+    const k = S.party.kind;
+    party =
+      '<div class="celebrate"><div class="party ' +
+      (k === 'lose' ? 'lose' : k === 'draw' ? 'draw' : '') +
+      '">' +
+      '<div class="emoji">' +
+      S.party.emoji +
+      '</div><h2>' +
+      esc(S.party.title) +
+      '</h2><p>' +
+      esc(S.party.text) +
+      '</p>' +
+      '<div class="actions"><button class="' +
+      (k === 'lose' ? 'danger' : 'primary') +
+      '" id="again">Play again</button>' +
+      '<button class="ghost" id="change">Change mode</button></div></div></div>';
+  }
+  return (
+    '<header class="top"><div><p class="eyebrow">CSS Geography Duel</p><h1>Earn the square</h1></div>' +
+    '<button class="ghost" id="menu">Menu</button></header>' +
+    '<div class="panel"><p class="status">' +
+    esc(status()) +
+    '</p>' +
+    '<p class="meta">' +
+    (S.mode === 'pvc' ? 'Vs Computer · ' + S.diff : 'Two Players') +
+    ' · Deck left: ' +
+    S.queue.length +
+    '</p>' +
+    '<div class="scores"><span>X ' +
+    S.scores.x +
+    '</span><span>O ' +
+    S.scores.o +
+    '</span><span>Draw ' +
+    S.scores.d +
+    '</span></div>' +
+    (S.fb ? '<p class="fb ' + S.fbType + '">' + esc(S.fb) + '</p>' : '') +
+    (S.aiLog ? '<p class="ai">' + esc(S.aiLog) + '</p>' : '') +
+    '</div><div class="board">' +
+    cells +
+    '</div>' +
+    modal +
+    party
+  );
+}
+
+function paint() {
+  document.getElementById('app').innerHTML = S.phase === 'menu' ? menuHTML() : gameHTML();
+}
+
+document.getElementById('muteBtn').onclick = function () {
+  muted = !muted;
+  this.textContent = muted ? '🔇 Sound Off' : '🔊 Sound On';
+  if (!muted) {
+    audio();
+    SFX.click();
+  }
+};
+
+document.getElementById('app').addEventListener('click', (e) => {
+  audio();
+  const t = e.target.closest('[data-go],[data-cell],[data-opt],#ok,#menu,#again,#change');
+  if (!t) return;
+  if (t.dataset.go) {
+    const [m, d] = t.dataset.go.split('|');
+    start(m, d);
+    return;
+  }
+  if (t.dataset.cell != null) {
+    tapCell(+t.dataset.cell);
+    return;
+  }
+  if (t.dataset.opt) {
+    SFX.select();
+    S.pick = t.dataset.opt;
+    paint();
+    return;
+  }
+  if (t.id === 'ok') {
+    lockAnswer();
+    return;
+  }
+  if (t.id === 'menu' || t.id === 'change') {
+    clearTimeout(S.timer);
+    SFX.click();
+    S.phase = 'menu';
+    S.pending = null;
+    S.aiBusy = false;
+    S.party = null;
+    bits = [];
+    paint();
+    return;
+  }
+  if (t.id === 'again') start(S.mode, S.diff);
+});
+
+paint();
+
+</script>
+</body>
+</html>
